@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Le vote ultime</title>
+  <title>tabarnak</title>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; display: grid; place-items: center;
@@ -75,7 +75,7 @@
           const votes = snapshot.val() || {};
           document.getElementById("oui-count").textContent = Number(votes.oui || 0);
           document.getElementById("non-count").textContent = Number(votes.non || 0);
-          statusEl.textContent = "Votes synchronisés en direct ";
+          statusEl.textContent = "vote oui le gros ";
         }, error => {
           showError("Erreur de lecture. Vérifie la configuration et les règles Firebase.");
           console.error(error);
@@ -91,7 +91,7 @@
               if (typeof current !== "number") return; // abandon si le compteur n'est pas initialisé
               return current + 1;
             });
-            statusEl.textContent = "Merci pour ton vote !";
+            statusEl.textContent = "yesssssir";
           } catch (error) {
             showError("Vote impossible. Vérifie les règles de la base de données.");
             console.error(error);

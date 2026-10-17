@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Le vote ultime</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center;
+      padding: 1rem; font-family: system-ui, Arial, sans-serif; background: #f4f4f8; color: #171722; }
+    main { width: min(92vw, 480px); padding: 2.2rem 1.5rem; text-align: center;
+      background: white; border-radius: 22px; box-shadow: 0 12px 40px #17172216; }
+    h1 { font-size: clamp(1.7rem, 6vw, 2.35rem); margin: 0 0 1.6rem; }
+    .buttons { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+    button { border: 0; border-radius: 12px; padding: .9rem 2rem; font-size: 1.1rem;
+      font-weight: 750; cursor: pointer; min-width: 125px; transition: transform .12s; }
+    button:hover { transform: translateY(-2px); }
+    button:disabled { opacity: .55; cursor: wait; transform: none; }
+    #oui { background: #20b26b; color: white; }
+    #non { background: #ef5360; color: white; }
+    .counts { display: flex; justify-content: center; gap: 1rem; margin-top: 1.7rem; }
+    .count { flex: 1; max-width: 150px; padding: 1rem .5rem; border-radius: 14px; background: #f5f5f8; }
+    .number { display: block; font-size: 2rem; font-weight: 800; }
+    .label { font-weight: 700; }
+    #status { min-height: 1.5rem; margin: 1.2rem 0 0; font-size: .92rem; color: #666; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Est-ce que Malcolm est sexy ? </h1>
+    <div class="buttons">
+      <button id="oui" type="button">OUI</button>
+      <button id="non" type="button">NON</button>
+    </div>
+    <div class="counts" aria-live="polite">
+      <div class="count"><span class="number" id="oui-count">0</span><span class="label">OUI</span></div>
+      <div class="count"><span class="number" id="non-count">0</span><span class="label">NON</span></div>
+    </div>
+    <p id="status">Connexion à la base de données…</p>
+  </main>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script>
+    // Remplace les valeurs ci-dessous par la configuration de ton application Firebase.
+    const firebaseConfig = {
+      apiKey: "AIzaSyDV_jl-qt7Esf7IXC4OXBVaAGgglaYgViI",
+      authDomain: "vote-3ecdf.firebaseapp.com",
+      databaseURL: "https://vote-3ecdf-default-rtdb.firebaseio.com/",
+      projectId: "vote-3ecdf",
+      appId: "1:885753732629:web:77863aea613815528bf81c"
+    };
+
+    const statusEl = document.getElementById("status");
+    const ouiButton = document.getElementById("oui");
+    const nonButton = document.getElementById("non");
+    let votesRef = null;
+
+    function showError(message) {
+      statusEl.textContent = message;
+    }
+
+    if (Object.values(firebaseConfig).some(v => v === "REMPLACE_MOI")) {
+      showError("Configuration à compléter : suis le README inclus dans le ZIP.");
+      ouiButton.disabled = true;
+      nonButton.disabled = true;
+    } else {
+      try {
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        votesRef = db.ref("vote");
+
+        votesRef.on("value", snapshot => {
+          const votes = snapshot.val() || {};
+          document.getElementById("oui-count").textContent = Number(votes.oui || 0);
+          document.getElementById("non-count").textContent = Number(votes.non || 0);
+          statusEl.textContent = "Votes synchronisés en direct ";
+        }, error => {
+          showError("Erreur de lecture. Vérifie la configuration et les règles Firebase.");
+          console.error(error);
+        });
+
+        async function vote(choice) {
+          ouiButton.disabled = true;
+          nonButton.disabled = true;
+          statusEl.textContent = "Enregistrement du vote…";
+          try {
+            // Transaction pour éviter de perdre des votes faits presque au même moment.
+            await db.ref("vote/" + choice).transaction(current => {
+              if (typeof current !== "number") return; // abandon si le compteur n'est pas initialisé
+              return current + 1;
+            });
+            statusEl.textContent = "Merci pour ton vote !";
+          } catch (error) {
+            showError("Vote impossible. Vérifie les règles de la base de données.");
+            console.error(error);
+          } finally {
+            ouiButton.disabled = false;
+            nonButton.disabled = false;
+          }
+        }
+
+        ouiButton.addEventListener("click", () => vote("oui"));
+        nonButton.addEventListener("click", () => vote("non"));
+      } catch (error) {
+        showError("Impossible de se connecter à Firebase. Vérifie la configuration.");
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>
